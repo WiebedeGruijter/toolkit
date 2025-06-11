@@ -20,8 +20,7 @@ class PointSourceSimulator(SimulatorBase):
         Initializes the simulator and loads the input 3D data cube.
         '''
         super().__init__()
-        # Load the 3D data cube instead of the old txt file
-        self.input_datacube = read_source_3D_cube(filepath=filepath)
+        self.input_spectrum = read_source_3D_cube(filepath=filepath)
         
     def _integrate_fov(self) -> xr.DataArray:
         '''
@@ -32,7 +31,7 @@ class PointSourceSimulator(SimulatorBase):
         # The result is a 1D DataArray with dimensions ('wavelength')
         # The units remain J/s/m^2/nm/sr because we are summing the intensity
         # contributions from each direction (pixel).
-        integrated_intensity = self.input_datacube.sum(dim=['x', 'y'])
+        integrated_intensity = self.input_spectrum.sum(dim=['x', 'y'])
         return integrated_intensity
 
     def get_flux_at_detector(self, modeling_settings: ModelingSettings):
