@@ -62,6 +62,7 @@ def generate_data_cube(savepath: str | None=None, n_pix_xy=256, star_temp=6000, 
     )
     data_xr.x.attrs['units'] = 'arcsec'
     data_xr.y.attrs['units'] = 'arcsec'
+    data_xr.wavelength.attrs['units'] = 'nm'
 
     if savepath is not None:
         print(f'File saved as {savepath}')
