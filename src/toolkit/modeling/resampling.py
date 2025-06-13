@@ -1,12 +1,10 @@
 import xarray as xr
 import numpy as np
 from scipy.stats import binned_statistic_2d
-
-ARCSEC_2_TO_STERADIAN = (np.pi / (180.0 * 3600.0))**2
+from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
 
 def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.ndarray, y_edges: np.ndarray) -> xr.DataArray:
     """Resamples a source cube onto an instrument grid, calculating flux per pixel."""
-    # --- The fix is in this section ---
 
     # 1. Get the 1D coordinate axes from the source cube.
     y_coords = source_cube.coords['y'].values
@@ -22,8 +20,6 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
     x_source_flat = xx.ravel()
     y_source_flat = yy.ravel()
 
-    # --- End of fix ---
-
     dx_source = abs(x_coords[1] - x_coords[0])
     dy_source = abs(y_coords[1] - y_coords[0])
     source_pixel_solid_angle = (dx_source * dy_source) * ARCSEC_2_TO_STERADIAN
@@ -32,7 +28,6 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
 
     binned_flux_list = []
     for wavelength_slice in source_flux_map:
-        # Now, the inputs to binned_statistic_2d will have matching lengths.
         statistic, _, _, _ = binned_statistic_2d(
             x=x_source_flat,
             y=y_source_flat,

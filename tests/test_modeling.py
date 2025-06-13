@@ -1,11 +1,10 @@
 import pytest
 import numpy as np
-import xarray as xr
 from toolkit.modeling.resampling import resample_source_to_instrument_grid
 from toolkit.modeling.noise_sources import (
     poisson_noise, readout_noise, instrumental_broadening, linear_baseline_drift)
 from toolkit.modeling.model_spectrum import apply_instrumental_effects
-from toolkit.modeling.resampling import ARCSEC_2_TO_STERADIAN
+from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
 
 def test_resample_to_miri(instrument_simulator, miri_settings):
     """
