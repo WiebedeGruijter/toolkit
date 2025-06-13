@@ -2,7 +2,7 @@ from scipy.constants import c, h
 import numpy as np
 from toolkit.defines.modelingsettings import ModelingSettings
 
-def poisson_noise(flux_at_detector, wavelength, modeling_settings):
+def poisson_noise(flux_at_detector, wavelength_nm, modeling_settings):
     """
     Applies Poisson shot noise to a flux signal.
 
@@ -13,8 +13,10 @@ def poisson_noise(flux_at_detector, wavelength, modeling_settings):
     """
     telescope_area = np.pi*(modeling_settings.instrument.mirror_diameter/2)**2
     exposure_time = modeling_settings.exposure_time
+
+    wavelength_m = wavelength_nm * 1e-9
     
-    energy_per_photon = h * c / wavelength
+    energy_per_photon = h * c / wavelength_m
 
     total_energy_collected = flux_at_detector * telescope_area * exposure_time
 
