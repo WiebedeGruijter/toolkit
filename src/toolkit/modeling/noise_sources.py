@@ -61,7 +61,7 @@ def readout_noise( modeling_settings: ModelingSettings):
     warnings.warn('Readout noise not implemented yet, defaulting to 0')
     return 0
 
-def instrumental_broadening(flux: np.ndarray, modeling_settings: ModelingSettings):
+def calculate_psf(flux: np.ndarray, modeling_settings: ModelingSettings):
     import warnings
     warnings.warn('Instrumental broadening not implemented yet, defaulting to no broadening')
     return flux

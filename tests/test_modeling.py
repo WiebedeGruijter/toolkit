@@ -1,8 +1,7 @@
 import pytest
 import numpy as np
-from toolkit.modeling.spatial_resampling import resample_source_to_instrument_grid
 from toolkit.modeling.noise_sources import (
-    poisson_noise, readout_noise, instrumental_broadening, linear_baseline_drift)
+    poisson_noise, readout_noise, calculate_psf, linear_baseline_drift)
 from toolkit.modeling.model_spectrum import apply_instrumental_effects
 from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
 
@@ -73,7 +72,7 @@ def test_placeholder_noise_functions(miri_settings):
         
     with pytest.warns(UserWarning, match='Instrumental broadening not implemented'):
         flux = np.ones(10)
-        assert np.all(instrumental_broadening(flux, miri_settings) == flux)
+        assert np.all(calculate_psf(flux, miri_settings) == flux)
         
     with pytest.warns(UserWarning, match='Baseline drift not implemented'):
         assert linear_baseline_drift(miri_settings) == 0
