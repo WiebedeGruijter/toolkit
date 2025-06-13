@@ -2,16 +2,10 @@ import numpy as np
 import xarray as xr
 from astropy.constants import R_sun, R_earth
 from scipy.constants import parsec, au
-# from toolkit.utils.blackbody import planck_law # Assuming you have this
+from toolkit.utils.blackbody import planck_law
 
 # Conversion from radians to arcseconds
 RAD_TO_ARCSEC = 180.0 / np.pi * 3600.0
-
-# Placeholder for your planck_law function
-def planck_law(temperature_k):
-    wavelengths = np.linspace(1000, 10000, 500)
-    spectrum = np.exp(-((wavelengths - 15000000/temperature_k)**2) / (2* (500e6/temperature_k)**2))
-    return wavelengths, spectrum * 1e11
 
 def generate_data_cube(savepath: str | None=None, n_pix_xy=256, star_temp=6000, star_radius_rsun=1,
                      planet_temp=300, planet_radius_rearth=1,

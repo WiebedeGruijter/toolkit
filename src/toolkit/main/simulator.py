@@ -1,5 +1,3 @@
-# src\toolkit\main\simulator.py
-
 from toolkit.defines.modelingsettings import ModelingSettings
 from toolkit.main.simulatorbase import SimulatorBase
 from toolkit.modeling.resampling import resample_source_to_instrument_grid

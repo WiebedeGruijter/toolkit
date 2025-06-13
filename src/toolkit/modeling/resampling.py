@@ -1,5 +1,3 @@
-# src\toolkit\modeling\resampling.py
-
 import xarray as xr
 import numpy as np
 from scipy.stats import binned_statistic_2d

@@ -1,5 +1,3 @@
-# src\toolkit\main\simulatorbase.py
-
 from abc import ABC, abstractmethod
 from toolkit.defines.modelingsettings import ModelingSettings
 import xarray as xr
