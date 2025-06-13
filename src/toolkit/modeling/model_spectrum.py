@@ -1,30 +1,36 @@
 from toolkit.defines.modelingsettings import ModelingSettings
 from xarray import DataArray
-from toolkit.modeling.noise_sources import poisson_noise, readout_noise, instrumental_broadening, linear_baseline_drift
+from toolkit.modeling.noise_sources import (
+    poisson_noise,
+    readout_noise,
+    instrumental_broadening,
+    linear_baseline_drift
+)
 import numpy as np
 
-def convert_specific_intensity_to_flux(input_intensity: np.ndarray, modeling_settings: ModelingSettings):
-    '''Convert specific intensity (J/s/m^2/nm/sr) to flux at the instrument (J/s/m^2/nm), taking into account the FOV per pixel.'''
-
-    flux_at_detector = (modeling_settings.instrument.fov_x_arcsec * modeling_settings.instrument.fov_y_arcsec) * input_intensity
-    return flux_at_detector
-
-def calculate_1D_observed_spectrum(input_spectrum: DataArray, modeling_settings: ModelingSettings):
+def apply_instrumental_effects(flux_spectrum: DataArray, modeling_settings: ModelingSettings) -> DataArray:
     """
-    Applies simulated noise and instrumental effects to a 1D spectrum.
+    Applies simulated noise and instrumental effects to a 1D flux spectrum.
+    This function can be applied to each pixel's spectrum in an IFU cube.
+
+    Args:
+        flux_spectrum (DataArray): A 1D DataArray of the source flux at the detector.
+        modeling_settings (ModelingSettings): The settings for the simulation.
+
+    Returns:
+        DataArray: The final observed spectrum with noise and other effects.
     """
-    assert input_spectrum.ndim == 1, f"Input spectrum must be 1D, but got {input_spectrum.ndim} dimensions."
+    assert flux_spectrum.ndim == 1, f"Input flux spectrum must be 1D, but got {flux_spectrum.ndim} dimensions."
 
-    input_intensity = input_spectrum.values # Numpy arrays are faster than DataArrays
+    flux_values = flux_spectrum.values
+    wavelength_values = flux_spectrum.coords['wavelength'].values
 
-    # Convert the specific intensity to flux at the detector
-    flux_at_detector = convert_specific_intensity_to_flux(input_intensity=input_intensity, modeling_settings=modeling_settings)
-
-    flux_at_detector = instrumental_broadening(flux_at_detector, modeling_settings)
-    flux_at_detector = poisson_noise(flux_at_detector, input_spectrum.wavelength, modeling_settings)
-
-    flux_at_detector += readout_noise(modeling_settings)
-    flux_at_detector += linear_baseline_drift(modeling_settings)
+    # Apply effects in sequence
+    flux_values = instrumental_broadening(flux_values, modeling_settings)
+    flux_values = poisson_noise(flux_values, wavelength_values, modeling_settings)
+    flux_values += readout_noise(modeling_settings)
+    flux_values += linear_baseline_drift(modeling_settings)
     
-    output_spectrum = input_spectrum.copy(data=flux_at_detector)
+    # Return a new DataArray with the noisy data
+    output_spectrum = flux_spectrum.copy(data=flux_values)
     return output_spectrum

@@ -1,21 +1,26 @@
+# src\toolkit\main\simulatorbase.py
+
 from abc import ABC, abstractmethod
-from toolkit.defines.modelingsettings import ModelingSettings # Assuming this exists
+from toolkit.defines.modelingsettings import ModelingSettings
+import xarray as xr
 
 class SimulatorBase(ABC):
-    '''
-    Abstract Base Class for all simulators.
-    
-    It defines a common interface for different types of instrument simulators.
-    '''
+    """An abstract base class for all instrument simulators."""
+
     def __init__(self):
-        self.input_spectrum = None
+        pass
 
     @abstractmethod
-    def get_observed_spectrum(self, modeling_settings: ModelingSettings):
-        '''Return an xarray with the observed spectrum, including noise.'''
-        raise NotImplementedError
+    def get_flux_at_detector(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """
+        Calculates the ideal, noise-free signal at the detector.
+        This should return the "clean" data before noise is added.
+        """
+        pass
 
     @abstractmethod
-    def get_flux_at_detector(self, modeling_settings: ModelingSettings):
-        '''Return an xarray with the spectrum at the instrument before noise.'''
-        raise NotImplementedError
+    def get_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """
+        Calculates the final "observed" signal, including instrumental effects.
+        """
+        pass

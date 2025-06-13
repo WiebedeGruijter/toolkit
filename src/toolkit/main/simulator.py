@@ -1,78 +1,56 @@
+# src\toolkit\main\simulator.py
+
 from toolkit.defines.modelingsettings import ModelingSettings
 from toolkit.main.simulatorbase import SimulatorBase
-from toolkit.modeling.model_spectrum import calculate_1D_observed_spectrum, convert_specific_intensity_to_flux
-from toolkit.read_data.source import read_source_3D_cube 
+from toolkit.modeling.resampling import resample_source_to_instrument_grid
+from toolkit.modeling.model_spectrum import apply_instrumental_effects
+from toolkit.read_data.source import read_source_3D_cube
 import xarray as xr
 
-class PointSourceSimulator(SimulatorBase):
-    r''' A decorator to observe a source as an unresolved point source.
-    
-    This simulator reads a 3D data cube but integrates over all spatial
-    pixels to create a single 1D spectrum, simulating an instrument that
-    cannot resolve the source.
-
-    Example usage:
-        filepath = r'path/to/source_datacube.nc'
-        sim = PointSourceSimulator(filepath=filepath)
-    '''
+class CubeSimulator(SimulatorBase):
+    """The common base class for all simulators that start with a 3D source cube."""
     def __init__(self, filepath: str):
-        '''
-        Initializes the simulator and loads the input 3D data cube.
-        '''
-        super().__init__()
-        self.input_spectrum = read_source_3D_cube(filepath=filepath)
-        
-    def _integrate_fov(self) -> xr.DataArray:
-        '''
-        Integrates the specific intensity over the spatial dimensions (the FOV)
-        to produce a single 1D spectrum for an unresolved source.
-        '''
-        # Sum the specific intensity over the 'x' and 'y' dimensions.
-        # The result is a 1D DataArray with dimensions ('wavelength')
-        # The units remain J/s/m^2/nm/sr because we are summing the intensity
-        # contributions from each direction (pixel).
-        integrated_intensity = self.input_spectrum.sum(dim=['x', 'y'])
-        return integrated_intensity
-
-    def get_flux_at_detector(self, modeling_settings: ModelingSettings):
-        ''' Return an xarray with the spectrum at the instrument before the addition of noise sources.'''
-        
-        # First, create the 1D point source spectrum by integrating the cube
-        point_source_intensity = self._integrate_fov()
-
-        flux_at_detector = convert_specific_intensity_to_flux(
-            input_intensity=point_source_intensity.values, 
-            modeling_settings=modeling_settings
-        )
-        return flux_at_detector
-
-    def get_observed_spectrum(self, modeling_settings: ModelingSettings):
-        '''Return an xarray with the observed spectrum, including error bars based on noise sources.'''
-
-        # First, create the 1D point source spectrum by integrating the cube
-        point_source_intensity = self._integrate_fov()
-        
-        # Now, pass this 1D spectrum to the existing calculation function
-        observed_spectrum = calculate_1D_observed_spectrum(
-            input_spectrum=point_source_intensity, 
-            modeling_settings=modeling_settings
-        )
-        return observed_spectrum
-    
-    def get_transit_spectrum(self, modeling_settings: ModelingSettings):
-        raise NotImplementedError
-
-class IFUSimulator(SimulatorBase):
-    ''' A decorator around a 3D datacube from an integral field unit.'''
-    def __init__(self, filepath: str):
-        '''
-        Initializes the simulator and loads the input spectrum data.
-        '''
         super().__init__()
         self.input_spectrum = read_source_3D_cube(filepath=filepath)
 
-    def get_flux_at_detector(self, modeling_settings: ModelingSettings):
-        raise NotImplementedError
+    def _get_flux_on_detector_grid(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """The common core: projects the source onto the instrument's detector grid."""
+        instrument = modeling_settings.instrument
+        x_edges, y_edges = instrument.get_pixel_layout()
+        return resample_source_to_instrument_grid(
+            source_cube=self.input_spectrum, x_edges=x_edges, y_edges=y_edges)
 
-    def get_observed_spectrum(self, modeling_settings: ModelingSettings):
-        raise NotImplementedError
+class PointSourceSimulator(CubeSimulator):
+    """A simulator that integrates all flux from a 3D cube into a single 1D spectrum."""
+
+    def get_flux_at_detector(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """Returns the clean, noise-free 1D spectrum."""
+        flux_per_pixel_cube = self._get_flux_on_detector_grid(modeling_settings)
+        # Integrate over all detector pixels to get the total flux.
+        total_flux_1d = flux_per_pixel_cube.sum(dim=['pix_x', 'pix_y'])
+        return total_flux_1d
+
+    def get_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """Returns the final spectrum with noise."""
+        # 1. Get the clean, noise-free spectrum.
+        clean_spectrum = self.get_flux_at_detector(modeling_settings)
+        # 2. Apply instrumental effects to it.
+        return apply_instrumental_effects(clean_spectrum, modeling_settings)
+
+class IFUSimulator(CubeSimulator):
+    """A simulator for an IFU, which preserves spatial information."""
+
+    def get_flux_at_detector(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """Returns the clean, noise-free 3D data cube."""
+        return self._get_flux_on_detector_grid(modeling_settings)
+
+    def get_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """Returns the final 3D cube with noise applied to each pixel."""
+        # 1. Get the clean, noise-free data cube.
+        clean_cube = self.get_flux_at_detector(modeling_settings)
+        # 2. Apply instrumental effects to each pixel's spectrum individually.
+        return xr.apply_ufunc(
+            apply_instrumental_effects, clean_cube,
+            input_core_dims=[['wavelength']], output_core_dims=[['wavelength']],
+            exclude_dims=set(('wavelength',)), vectorize=True,
+            kwargs={'modeling_settings': modeling_settings})
