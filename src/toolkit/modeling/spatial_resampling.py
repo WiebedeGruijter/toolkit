@@ -44,6 +44,7 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
             'wavelength': source_cube.coords['wavelength'],
             'pix_y': np.arange(len(y_edges) - 1),
             'pix_x': np.arange(len(x_edges) - 1)
-        }
+        },
+        attrs={"units": "W m^-2 nm^-1"}
     )
     return flux_cube
