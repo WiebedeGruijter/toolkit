@@ -1,7 +1,7 @@
 from toolkit.defines.modelingsettings import ModelingSettings
 from toolkit.main.simulatorbase import SimulatorBase
 from toolkit.modeling.model_spectrum import calculate_1D_observed_spectrum, convert_specific_intensity_to_flux
-from toolkit.datatypes.source import read_source_3D_cube 
+from toolkit.read_data.source import read_source_3D_cube 
 import xarray as xr
 
 class PointSourceSimulator(SimulatorBase):
