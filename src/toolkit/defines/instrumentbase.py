@@ -26,4 +26,4 @@ class JWST(InstrumentBase):
     A base class for all JWST instruments, inheriting the abstract methods
     from InstrumentBase.
     """
-    mirror_diameter = 2.4
+    mirror_diameter = 6.5

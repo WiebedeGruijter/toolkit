@@ -36,14 +36,12 @@ class IFUSimulator(CubeSimulator):
         clean_cube = self.get_flux_at_detector(modeling_settings)
         
         # 2. Apply instrumental effects using apply_ufunc.
-        # We now pass the cube AND its wavelength coordinates as inputs.
         return xr.apply_ufunc(
             apply_instrumental_effects,
             clean_cube,                     # First input arg (for flux_values)
             clean_cube.wavelength,          # Second input arg (for wavelength_values)
             input_core_dims=[['wavelength'], ['wavelength']], # Rules for each input
             output_core_dims=[['wavelength']],                 # Rule for the output
-            exclude_dims=set(('wavelength',)),
             vectorize=True,
             kwargs={'modeling_settings': modeling_settings} # Extra args for the function
         )
