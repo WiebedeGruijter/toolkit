@@ -22,7 +22,7 @@ def poisson_noise(flux_at_detector, wavelength_nm, modeling_settings):
 
     n_photons = total_energy_collected / energy_per_photon
     
-    # --- The Fix: Handle large photon counts with a Gaussian approximation ---
+    # Handle large photon counts with a Gaussian approximation
     noisy_n_photons = np.zeros_like(n_photons, dtype=float)
 
     # Set a threshold for when to switch from Poisson to Gaussian statistics.
@@ -50,8 +50,6 @@ def poisson_noise(flux_at_detector, wavelength_nm, modeling_settings):
     # The Normal distribution can produce negative numbers, which is unphysical.
     # Set any negative photon counts to zero.
     noisy_n_photons[noisy_n_photons < 0] = 0.0
-    
-    # --- End of fix ---
 
     noisy_total_energy = noisy_n_photons * energy_per_photon
     noisy_flux = noisy_total_energy / (telescope_area * exposure_time)
