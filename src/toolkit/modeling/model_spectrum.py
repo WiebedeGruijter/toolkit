@@ -4,9 +4,9 @@ from toolkit.modeling.noise_sources import poisson_noise, readout_noise, instrum
 import numpy as np
 
 def convert_specific_intensity_to_flux(input_intensity: np.ndarray, modeling_settings: ModelingSettings):
-    '''Convert specific intensity (J/s/m^2/nm/sr) to flux at the instrument (J/s/m^2/nm), taking into account distance to source.'''
+    '''Convert specific intensity (J/s/m^2/nm/sr) to flux at the instrument (J/s/m^2/nm), taking into account the FOV per pixel.'''
 
-    flux_at_detector = np.pi * (modeling_settings.source_radius/modeling_settings.distance_to_source)**2 * input_intensity
+    flux_at_detector = (modeling_settings.instrument.fov_x_arcsec * modeling_settings.instrument.fov_y_arcsec) * input_intensity
     return flux_at_detector
 
 def calculate_1D_observed_spectrum(input_spectrum: DataArray, modeling_settings: ModelingSettings):
