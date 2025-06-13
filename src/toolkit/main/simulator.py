@@ -3,45 +3,55 @@ from toolkit.main.simulatorbase import CubeSimulator
 from toolkit.modeling.model_spectrum import apply_instrumental_effects
 import xarray as xr
 
-class PointSourceSimulator(CubeSimulator):
-    """A simulator that integrates all flux from a 3D cube into a single 1D spectrum."""
+class InstrumentSimulator(CubeSimulator):
+    """
+    A simulator that models an instrument's response to a 3D source cube.
+
+    This class can provide the full 3D "IFU-style" data cube, or it can
+    provide the spatially-integrated "point-source-style" 1D spectrum.
+    
+    The noise is always calculated on a per-pixel basis for physical accuracy
+    before any spatial integration is performed.
+    """
 
     def get_flux_at_detector(self, modeling_settings: ModelingSettings) -> xr.DataArray:
-        flux_per_pixel_cube = self._get_flux_on_detector_grid(modeling_settings)
-        total_flux_1d = flux_per_pixel_cube.sum(dim=['pix_x', 'pix_y'])
-        return total_flux_1d
-
-    def get_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
-        # 1. Get the clean, noise-free 1D DataArray.
-        clean_spectrum = self.get_flux_at_detector(modeling_settings)
+        """
+        Gets the clean (noise-free) flux as a 3D data cube (Wavelength, Y, X).
         
-        # 2. Extract numpy arrays to pass to the core function.
-        flux_vals = clean_spectrum.values
-        wave_vals = clean_spectrum.wavelength.values
-        
-        # 3. Apply instrumental effects.
-        noisy_flux_vals = apply_instrumental_effects(flux_vals, wave_vals, modeling_settings)
-        
-        # 4. Wrap the result back into a DataArray.
-        return clean_spectrum.copy(data=noisy_flux_vals)
-
-class IFUSimulator(CubeSimulator):
-    """A simulator for an IFU, which preserves spatial information."""
-
-    def get_flux_at_detector(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        This represents the ideal signal hitting each detector pixel.
+        """
         return self._get_flux_on_detector_grid(modeling_settings)
 
     def get_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """
+        Gets the observed flux, including instrumental noise, as a 3D data cube.
+        
+        This is the primary output, simulating a full IFU data cube.
+        """
         # 1. Get the clean, noise-free data cube.
         clean_cube = self.get_flux_at_detector(modeling_settings)
         
-        # 2. Apply instrumental effects using apply_ufunc.
+        # 2. Apply instrumental effects to each pixel's spectrum using apply_ufunc.
         return xr.apply_ufunc(
             apply_instrumental_effects,
-            clean_cube,                     # First input arg (for flux_values)
-            clean_cube.wavelength,          # Second input arg (for wavelength_values)
+            clean_cube,                       # First input arg (for flux_values)
+            clean_cube.wavelength,            # Second input arg (for wavelength_values)
             input_core_dims=[['wavelength'], ['wavelength']], # Rules for each input
-            output_core_dims=[['wavelength']],                 # Rule for the output
+            output_core_dims=[['wavelength']],      # Rule for the output
             vectorize=True,
             kwargs={'modeling_settings': modeling_settings} # Extra args for the function
         )
+
+    def get_spatially_integrated_flux(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """
+        Gets the clean (noise-free) flux, spatially integrated into a 1D spectrum.
+        """
+        clean_cube = self.get_flux_at_detector(modeling_settings)
+        return clean_cube.sum(dim=['pix_x', 'pix_y'])
+
+    def get_spatially_integrated_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """
+        Gets the observed flux with noise, spatially integrated into a 1D spectrum.
+        """
+        noisy_cube = self.get_observed_spectrum(modeling_settings)
+        return noisy_cube.sum(dim=['pix_x', 'pix_y'])
