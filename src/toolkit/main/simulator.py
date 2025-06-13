@@ -1,22 +1,7 @@
 from toolkit.defines.modelingsettings import ModelingSettings
-from toolkit.main.simulatorbase import SimulatorBase
-from toolkit.modeling.resampling import resample_source_to_instrument_grid
+from toolkit.main.simulatorbase import CubeSimulator
 from toolkit.modeling.model_spectrum import apply_instrumental_effects
-from toolkit.read_data.source import read_source_3D_cube
 import xarray as xr
-
-class CubeSimulator(SimulatorBase):
-    """The common base class for all simulators that start with a 3D source cube."""
-    def __init__(self, filepath: str):
-        super().__init__()
-        self.input_spectrum = read_source_3D_cube(filepath=filepath)
-
-    def _get_flux_on_detector_grid(self, modeling_settings: ModelingSettings) -> xr.DataArray:
-        """The common core: projects the source onto the instrument's detector grid."""
-        instrument = modeling_settings.instrument
-        x_edges, y_edges = instrument.get_pixel_layout()
-        return resample_source_to_instrument_grid(
-            source_cube=self.input_spectrum, x_edges=x_edges, y_edges=y_edges)
 
 class PointSourceSimulator(CubeSimulator):
     """A simulator that integrates all flux from a 3D cube into a single 1D spectrum."""
