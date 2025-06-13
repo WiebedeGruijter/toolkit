@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from toolkit.defines.modelingsettings import ModelingSettings
 import xarray as xr
-from toolkit.modeling.resampling import resample_source_to_instrument_grid
+from toolkit.modeling.spatial_resampling import resample_source_to_instrument_grid
 from toolkit.read_data.source import read_source_3D_cube
 
 class SimulatorBase(ABC):
