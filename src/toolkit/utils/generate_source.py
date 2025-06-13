@@ -4,7 +4,7 @@ from astropy.constants import R_sun, R_earth
 from scipy.constants import parsec, au
 from toolkit.utils.blackbody import planck_law
 
-def generate_data_cube(savepath: str, n_pix_xy=256, star_temp=6000, star_radius_rsun=1,
+def generate_data_cube(savepath: str | None=None, n_pix_xy=256, star_temp=6000, star_radius_rsun=1,
                        planet_temp=300, planet_radius_rearth=1,
                        distance_pc=10, sma_au=1):
     """
@@ -69,5 +69,9 @@ def generate_data_cube(savepath: str, n_pix_xy=256, star_temp=6000, star_radius_
         name="specific_intensity",
         attrs={"units": "W m^-2 sr^-1 nm^-1", 'distance_pc': distance_pc}
     )
-    data_xr.to_netcdf(savepath)
-    return data_xr
+
+    if savepath is not None:
+        print(f'File saved as {savepath}')
+        data_xr.to_netcdf(savepath)
+    else:
+        return data_xr
