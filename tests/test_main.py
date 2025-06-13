@@ -53,11 +53,12 @@ def test_get_spatially_integrated_observed_spectrum(instrument_simulator, nirspe
     """
     Tests the spatial integration of the noisy, observed flux.
     """
-    np.random.seed(42)
     with pytest.warns(UserWarning): # Suppress warnings
+        np.random.seed(42)
         integrated_spectrum = instrument_simulator.get_spatially_integrated_observed_spectrum(nirspec_settings)
         
         # Verify that it matches a manual summation of the noisy cube
+        np.random.seed(42) # The previous call to a random function advances the random seed generator, so we need to set it again
         noisy_cube = instrument_simulator.get_observed_spectrum(nirspec_settings)
         manual_sum = noisy_cube.sum(dim=['pix_x', 'pix_y'])
         

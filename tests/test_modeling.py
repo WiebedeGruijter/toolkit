@@ -5,6 +5,7 @@ from toolkit.modeling.resampling import resample_source_to_instrument_grid
 from toolkit.modeling.noise_sources import (
     poisson_noise, readout_noise, instrumental_broadening, linear_baseline_drift)
 from toolkit.modeling.model_spectrum import apply_instrumental_effects
+from toolkit.modeling.resampling import ARCSEC_2_TO_STERADIAN
 
 def test_resample_to_miri(instrument_simulator, miri_settings):
     """
@@ -31,7 +32,7 @@ def test_flux_conservation(instrument_simulator, miri_settings):
     # Calculate total input flux (accounting for source pixel area)
     dx = abs(source_cube.x[1] - source_cube.x[0]).item()
     dy = abs(source_cube.y[1] - source_cube.y[0]).item()
-    source_pixel_area = dx * dy # in arcsec^2
+    source_pixel_area = dx * dy * ARCSEC_2_TO_STERADIAN
     total_input_flux = source_cube.sum(dim=['x', 'y']) * source_pixel_area
 
     # Resample to instrument grid (MIRI captures the whole FOV)
