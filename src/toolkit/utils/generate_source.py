@@ -65,5 +65,15 @@ def generate_data_cube(savepath: str | None=None, n_pix_xy=256, star_temp=6000, 
 
     if savepath is not None:
         print(f'File saved as {savepath}')
-        data_xr.to_netcdf(savepath)
+
+        # Define the compression settings
+        encoding_settings = {
+            data_xr.name: {  # Use data_xr.name to be robust
+                'zlib': True,
+                'complevel': 5
+            }
+        }
+        
+        # Save the file with the specified encoding
+        data_xr.to_netcdf(savepath, encoding=encoding_settings)
     return data_xr
