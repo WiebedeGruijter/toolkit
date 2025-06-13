@@ -1,36 +1,29 @@
 from toolkit.defines.modelingsettings import ModelingSettings
-from xarray import DataArray
 from toolkit.modeling.noise_sources import (
-    poisson_noise,
-    readout_noise,
-    instrumental_broadening,
-    linear_baseline_drift
-)
+    poisson_noise, readout_noise, instrumental_broadening, linear_baseline_drift)
 import numpy as np
 
-def apply_instrumental_effects(flux_spectrum: DataArray, modeling_settings: ModelingSettings) -> DataArray:
+def apply_instrumental_effects(flux_values: np.ndarray, wavelength_values: np.ndarray, modeling_settings: ModelingSettings) -> np.ndarray:
     """
-    Applies simulated noise and instrumental effects to a 1D flux spectrum.
-    This function can be applied to each pixel's spectrum in an IFU cube.
+    Applies simulated noise and instrumental effects to a 1D numpy array of flux values.
+    This is a "core" function designed to be compatible with xr.apply_ufunc.
 
     Args:
-        flux_spectrum (DataArray): A 1D DataArray of the source flux at the detector.
+        flux_values (np.ndarray): A 1D array of the source flux at the detector.
+        wavelength_values (np.ndarray): A 1D array of corresponding wavelengths.
         modeling_settings (ModelingSettings): The settings for the simulation.
 
     Returns:
-        DataArray: The final observed spectrum with noise and other effects.
+        np.ndarray: The final observed flux values with noise and other effects.
     """
-    assert flux_spectrum.ndim == 1, f"Input flux spectrum must be 1D, but got {flux_spectrum.ndim} dimensions."
-
-    flux_values = flux_spectrum.values
-    wavelength_values = flux_spectrum.coords['wavelength'].values
+    assert flux_values.ndim == 1, f"Input flux array must be 1D, but got {flux_values.ndim}."
+    
+    noisy_flux = flux_values.copy()
 
     # Apply effects in sequence
-    flux_values = instrumental_broadening(flux_values, modeling_settings)
-    flux_values = poisson_noise(flux_values, wavelength_values, modeling_settings)
-    flux_values += readout_noise(modeling_settings)
-    flux_values += linear_baseline_drift(modeling_settings)
+    noisy_flux = instrumental_broadening(noisy_flux, modeling_settings)
+    noisy_flux = poisson_noise(noisy_flux, wavelength_values, modeling_settings)
+    noisy_flux += readout_noise(modeling_settings)
+    noisy_flux += linear_baseline_drift(modeling_settings)
     
-    # Return a new DataArray with the noisy data
-    output_spectrum = flux_spectrum.copy(data=flux_values)
-    return output_spectrum
+    return noisy_flux
