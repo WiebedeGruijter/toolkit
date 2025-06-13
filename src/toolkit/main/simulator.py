@@ -31,7 +31,7 @@ class InstrumentSimulator(CubeSimulator):
         # 1. Get the clean, noise-free data cube.
         clean_cube = self.get_flux_at_detector(modeling_settings)
         
-        # 2. Apply instrumental effects to each pixel's spectrum. Note that this changes the shape of the array.
+        # 2. Apply noise effects to each pixel's spectrum. Note that apply_ufunc changes the shape of the array.
         noisy_cube_reordered = xr.apply_ufunc(
             apply_instrumental_effects,
             clean_cube,                      # First input arg (for flux_values)
