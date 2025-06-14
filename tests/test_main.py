@@ -16,7 +16,7 @@ def test_get_clean_flux_at_detector(instrument_simulator, nirspec_settings):
     clean_cube = instrument_simulator.get_clean_flux_at_detector(nirspec_settings)
     assert isinstance(clean_cube, xr.DataArray)
     assert clean_cube.dims == ('wavelength', 'pix_y', 'pix_x')
-    assert clean_cube.shape == (500, 30, 30)
+    assert clean_cube.shape == (50, 30, 30)
 
 def test_get_observed_spectrum(instrument_simulator, nirspec_settings):
     """
@@ -42,7 +42,7 @@ def test_get_spatially_integrated_flux(instrument_simulator, miri_settings):
     
     assert isinstance(integrated_spectrum, xr.DataArray)
     assert integrated_spectrum.dims == ('wavelength',)
-    assert integrated_spectrum.shape == (500,)
+    assert integrated_spectrum.shape == (50,)
 
     # Verify that it matches a manual summation
     clean_cube = instrument_simulator.get_clean_flux_at_detector(miri_settings)

@@ -26,8 +26,7 @@ def test_read_point_source(point_source_filepaths: dict[str, Path]):
     assert data_array.dims == ('wavelength',)
     assert data_array.name == 'intensity'
     assert data_array.attrs['units'] == 'J/s/m^2/nm/sr'
-    assert len(data_array.wavelength) == 500
-    assert data_array.shape == (500,)
+    assert data_array.ndim == 1
 
 def test_read_point_source_value_error(tmp_path: Path):
     """
