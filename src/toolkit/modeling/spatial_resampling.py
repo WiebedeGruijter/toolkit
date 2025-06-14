@@ -5,7 +5,6 @@ from astropy.convolution import AiryDisk2DKernel, convolve
 from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
 from toolkit.defines.modelingsettings import ModelingSettings
 
-# Retain the original, unchanged PSF helper function
 def _apply_psf(image_slice: np.ndarray, wavelength_m: float, mirror_diameter: float, pixel_scale_arcsec: float) -> np.ndarray:
     """Applies a wavelength-dependent Airy disk PSF to a 2D image slice."""
     first_null_rad = 1.22 * wavelength_m / mirror_diameter
@@ -79,7 +78,7 @@ def resample_source_to_instrument_grid(
     bins the data onto the new grid. The operation is vectorized over the
     'wavelength' dimension using xarray.apply_ufunc for high performance.
     """
-    print("Applying vectorized PSF convolution and rebinning...")
+    print("Applying PSF convolution and spatial rebinning onto the detector grid...")
     
     # 1. Prepare data for resampling
     dx_source = abs(source_cube.coords['x'].values[1] - source_cube.coords['x'].values[0])
@@ -108,7 +107,7 @@ def resample_source_to_instrument_grid(
         }
     )
 
-    print("...Vectorized processing complete.")
+    print("...PSF and rebinning complete.")
 
     # 3. Assign final coordinates and attributes to the output DataArray
     final_cube = flux_cube.assign_coords(
