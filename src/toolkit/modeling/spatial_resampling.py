@@ -79,7 +79,7 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
     ]
 
     # 5. Apply the PSF to all slices in parallel using a multiprocessing Pool.
-    print("Applying PSF convolution to wavelength slices...")
+    print("Applying PSF convolution to all wavelength slices...")
     with Pool() as pool:
         convolved_slices = pool.starmap(_apply_psf, args_for_starmap)
     print("...PSF convolution complete.")
