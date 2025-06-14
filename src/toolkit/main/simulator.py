@@ -14,13 +14,13 @@ class InstrumentSimulator(CubeSimulator):
     before any spatial integration is performed.
     """
 
-    def get_flux_at_detector(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+    def get_clean_flux_at_detector(self, modeling_settings: ModelingSettings) -> xr.DataArray:
         """
         Gets the clean (noise-free) flux as a 3D data cube (Wavelength, Y, X).
         
         This represents the ideal signal hitting each detector pixel.
         """
-        return self._get_flux_on_detector_grid(modeling_settings)
+        return self._get_clean_flux_on_detector_grid(modeling_settings)
 
     def get_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
         """
@@ -29,7 +29,7 @@ class InstrumentSimulator(CubeSimulator):
         This is the primary output, simulating a full IFU data cube.
         """
         # 1. Get the clean, noise-free data cube.
-        clean_cube = self.get_flux_at_detector(modeling_settings)
+        clean_cube = self.get_clean_flux_at_detector(modeling_settings)
         
         # 2. Apply noise effects to each pixel's spectrum. Note that apply_ufunc changes the shape of the array.
         noisy_cube_reordered = xr.apply_ufunc(
@@ -50,7 +50,7 @@ class InstrumentSimulator(CubeSimulator):
         """
         Gets the clean (noise-free) flux, spatially integrated into a 1D spectrum.
         """
-        clean_cube = self.get_flux_at_detector(modeling_settings)
+        clean_cube = self.get_clean_flux_at_detector(modeling_settings)
         return clean_cube.sum(dim=['pix_x', 'pix_y'])
 
     def get_spatially_integrated_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:

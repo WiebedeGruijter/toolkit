@@ -9,7 +9,7 @@ def test_resample_to_miri(instrument_simulator, miri_settings):
     """
     Tests resampling a source cube onto the MIRI 1x1 grid.
     """
-    resampled_cube = instrument_simulator._get_flux_on_detector_grid(miri_settings)
+    resampled_cube = instrument_simulator._get_clean_flux_on_detector_grid(miri_settings)
     assert resampled_cube.dims == ('wavelength', 'pix_y', 'pix_x')
     assert resampled_cube.shape[1:] == (1, 1) # MIRI is 1x1
 
@@ -17,7 +17,7 @@ def test_resample_to_nirspec(instrument_simulator, nirspec_settings):
     """
     Tests resampling a source cube onto the NIRSpec 30x30 grid.
     """
-    resampled_cube = instrument_simulator._get_flux_on_detector_grid(nirspec_settings)
+    resampled_cube = instrument_simulator._get_clean_flux_on_detector_grid(nirspec_settings)
     assert resampled_cube.dims == ('wavelength', 'pix_y', 'pix_x')
     assert resampled_cube.shape[1:] == (30, 30) # NIRSpec is 30x30
 
@@ -34,7 +34,7 @@ def test_flux_conservation(instrument_simulator, miri_settings):
     total_input_flux = source_cube.sum(dim=['x', 'y']) * source_pixel_area
 
     # Resample to instrument grid (MIRI captures the whole FOV)
-    resampled_cube = instrument_simulator._get_flux_on_detector_grid(miri_settings)
+    resampled_cube = instrument_simulator._get_clean_flux_on_detector_grid(miri_settings)
     
     # The resampled cube values are already total flux per pixel, so we just sum
     total_output_flux = resampled_cube.sum(dim=['pix_x', 'pix_y'])
