@@ -1,6 +1,6 @@
 from toolkit.defines.modelingsettings import ModelingSettings
 from toolkit.modeling.noise_sources import (
-    poisson_noise, readout_noise, calculate_psf, linear_baseline_drift)
+    poisson_noise, readout_noise, linear_baseline_drift)
 import numpy as np
 
 def apply_instrumental_effects(flux_values: np.ndarray, wavelength_values: np.ndarray, modeling_settings: ModelingSettings) -> np.ndarray:
@@ -21,7 +21,6 @@ def apply_instrumental_effects(flux_values: np.ndarray, wavelength_values: np.nd
     noisy_flux = flux_values.copy()
 
     # Apply effects in sequence
-    noisy_flux = calculate_psf(noisy_flux, modeling_settings)
     noisy_flux = poisson_noise(noisy_flux, wavelength_values, modeling_settings)
     noisy_flux += readout_noise(modeling_settings)
     noisy_flux += linear_baseline_drift(modeling_settings)

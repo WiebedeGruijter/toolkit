@@ -61,11 +61,6 @@ def readout_noise( modeling_settings: ModelingSettings):
     warnings.warn('Readout noise not implemented yet, defaulting to 0')
     return 0
 
-def calculate_psf(flux: np.ndarray, modeling_settings: ModelingSettings):
-    import warnings
-    warnings.warn('PSF not implemented yet, defaulting to no broadening')
-    return flux
-
 def linear_baseline_drift(modeling_settings: ModelingSettings):
     import warnings
     warnings.warn('Baseline drift not implemented yet, defaulting to 0')

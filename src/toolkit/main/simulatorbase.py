@@ -32,7 +32,7 @@ class CubeSimulator(SimulatorBase):
         self.input_spectrum = read_source_3D_cube(filepath=filepath)
 
     def _get_clean_flux_on_detector_grid(self, modeling_settings: ModelingSettings) -> xr.DataArray:
-        """The common core: projects the source onto the instrument's detector grid, without any noise or instrumental broadening."""
+        """The common core: projects the source onto the instrument's detector grid, without any noise."""
         instrument = modeling_settings.instrument
         x_edges, y_edges = instrument.get_pixel_layout()
         return resample_source_to_instrument_grid(
