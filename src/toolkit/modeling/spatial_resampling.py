@@ -2,7 +2,6 @@ import xarray as xr
 import numpy as np
 from scipy.stats import binned_statistic_2d
 from astropy.convolution import AiryDisk2DKernel, convolve
-from joblib import Parallel, delayed
 from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
 from toolkit.defines.modelingsettings import ModelingSettings
 
@@ -48,8 +47,8 @@ def _apply_psf(image_slice: np.ndarray, wavelength_m: float, mirror_diameter: fl
 def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.ndarray, y_edges: np.ndarray, modeling_settings: ModelingSettings) -> xr.DataArray:
     """
     Resamples a source cube onto an instrument grid, applying a PSF convolution
-    at each wavelength before binning. The PSF application is parallelized across
-    all available CPU cores using Python's joblib module.
+    at each wavelength before binning. The PSF is applied sequentially
+    for each wavelength slice.
     """
 
     # 1. Get coordinate axes from the source cube.
@@ -67,18 +66,22 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
     source_pixel_solid_angle = (dx_source * dy_source) * ARCSEC_2_TO_STERADIAN
     source_flux_map = source_cube * source_pixel_solid_angle
 
-    # 4. Apply the PSF to all slices in parallel using joblib.
+    # 4. Apply the PSF to all slices sequentially in a for loop.
     print("Applying PSF convolution to all wavelength slices...")
     mirror_diameter = modeling_settings.instrument.mirror_diameter
     
-    convolved_slices = Parallel(n_jobs=-1)(
-        delayed(_apply_psf)(
-            wl_slice.values,
-            wl_slice.wavelength.item() * 1e-9,
-            mirror_diameter,
-            dx_source
-        ) for wl_slice in source_flux_map
-    )
+    convolved_slices = []
+    for i, wl in enumerate(source_flux_map.wavelength.values):
+        print(f'Processing slice {i}/{len(source_flux_map.wavelength.values)}', end='\r', flush=True)
+        wl_slice = source_flux_map.sel(wavelength=wl)
+        convolved_slice = _apply_psf(
+            image_slice=wl_slice.values,
+            wavelength_m=wl_slice.wavelength.item() * 1e-9, # Convert nm to m
+            mirror_diameter=mirror_diameter,
+            pixel_scale_arcsec=dx_source
+        )
+        convolved_slices.append(convolved_slice)
+        
     print("...PSF convolution complete.")
 
 
