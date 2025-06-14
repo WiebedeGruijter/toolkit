@@ -8,3 +8,4 @@ class ModelingSettings():
     """
     instrument: InstrumentBase
     exposure_time: float | None = None
+    use_gpu: bool = False

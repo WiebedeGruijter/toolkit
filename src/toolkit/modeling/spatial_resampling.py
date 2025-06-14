@@ -122,7 +122,6 @@ if BACKEND == 'mlx':
 # --- CPU-Only Functions ---
 
 def _apply_psf_cpu(image_slice: np.ndarray, wavelength_m: float, mirror_diameter: float, pixel_scale_arcsec: float) -> np.ndarray:
-    # (Code is identical to before)
     first_null_rad = 1.22 * wavelength_m / mirror_diameter
     first_null_arcsec = np.rad2deg(first_null_rad) * 3600.0
     first_null_pix = first_null_arcsec / pixel_scale_arcsec
@@ -132,9 +131,40 @@ def _apply_psf_cpu(image_slice: np.ndarray, wavelength_m: float, mirror_diameter
     else:
         return image_slice
 
+def _convolve_and_rebin_slice(
+    image_slice: np.ndarray,
+    wavelength_nm: float,
+    x_source_flat: np.ndarray,
+    y_source_flat: np.ndarray,
+    x_edges: np.ndarray,
+    y_edges: np.ndarray,
+    mirror_diameter: float,
+    pixel_scale_arcsec: float
+) -> np.ndarray:
+    """Core CPU operation for vectorization: Convolves and rebins a single 2D slice."""
+    # 1. Apply PSF using the CPU helper function
+    convolved_slice = _apply_psf_cpu(
+        image_slice=image_slice,
+        wavelength_m=wavelength_nm * 1e-9,
+        mirror_diameter=mirror_diameter,
+        pixel_scale_arcsec=pixel_scale_arcsec
+    )
+    # 2. Perform binning with SciPy
+    statistic, _, _, _ = binned_statistic_2d(
+        x=x_source_flat,
+        y=y_source_flat,
+        values=convolved_slice.ravel(),
+        statistic='sum',
+        bins=[x_edges, y_edges]
+    )
+    return statistic.T
+
 def _resample_cpu(source_cube: xr.DataArray, x_edges: np.ndarray, y_edges: np.ndarray, modeling_settings: ModelingSettings) -> xr.DataArray:
-    # (Code is identical to before)
-    print("--- No GPU detected. Running standard CPU resampling. ---")
+    """
+    Vectorized CPU implementation that uses xr.apply_ufunc to loop over
+    the wavelength dimension. Runs on a single core.
+    """
+    print("--- No GPU detected. Running vectorized CPU resampling. ---")
     y_coords, x_coords = source_cube.coords['y'].values, source_cube.coords['x'].values
     xx, yy = np.meshgrid(x_coords, y_coords, indexing='ij')
     x_source_flat, y_source_flat = xx.ravel(), yy.ravel()
@@ -143,14 +173,31 @@ def _resample_cpu(source_cube: xr.DataArray, x_edges: np.ndarray, y_edges: np.nd
     source_pixel_solid_angle = (dx_source**2) * ARCSEC_2_TO_STERADIAN
     source_flux_map = source_cube * source_pixel_solid_angle
 
-    binned_flux_list = []
-    for wl in source_flux_map.wavelength.values:
-        wl_slice = source_flux_map.sel(wavelength=wl)
-        convolved_slice = _apply_psf_cpu(image_slice=wl_slice.values, wavelength_m=wl.item() * 1e-9, mirror_diameter=modeling_settings.instrument.mirror_diameter, pixel_scale_arcsec=dx_source)
-        statistic, _, _, _ = binned_statistic_2d(x=x_source_flat, y=y_source_flat, values=convolved_slice.ravel(), statistic='sum', bins=[x_edges, y_edges])
-        binned_flux_list.append(statistic.T)
+    # Use apply_ufunc with vectorize=True.
+    # This tells xarray to intelligently broadcast our function over the non-core dimensions.
+    flux_cube = xr.apply_ufunc(
+        _convolve_and_rebin_slice,      # Our simple, single-slice function
+        source_flux_map,                # The 3D input cube
+        source_flux_map.wavelength,     # The 1D wavelength coordinate array
+        input_core_dims=[['y', 'x'], []], # Defines a 2D slice and a scalar as inputs
+        output_core_dims=[['pix_y', 'pix_x']], # Defines a 2D slice as the output
+        exclude_dims=set(('y', 'x')),   # Dimensions to drop from the output
+        vectorize=True,                 # The key change!
+        kwargs={                        # Constant arguments for every call
+            "x_source_flat": x_source_flat,
+            "y_source_flat": y_source_flat,
+            "x_edges": x_edges,
+            "y_edges": y_edges,
+            "mirror_diameter": modeling_settings.instrument.mirror_diameter,
+            "pixel_scale_arcsec": dx_source,
+        }
+    )
 
-    flux_cube = xr.DataArray(data=np.array(binned_flux_list), dims=['wavelength', 'pix_y', 'pix_x'], coords={'wavelength': source_cube.coords['wavelength'], 'pix_y': np.arange(len(y_edges) - 1), 'pix_x': np.arange(len(x_edges) - 1)}, attrs={"units": "W m^-2 nm^-1"})
+    flux_cube = flux_cube.assign_coords(
+        pix_y=np.arange(len(y_edges) - 1),
+        pix_x=np.arange(len(x_edges) - 1)
+    )
+    flux_cube.attrs["units"] = "W m^-2 nm^-1"
     return flux_cube
 
 # --- Main Public Function (The Dispatcher) ---
@@ -160,11 +207,14 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
     Resamples a source cube onto an instrument grid. This function intelligently
     selects the fastest available hardware backend (NVIDIA CUDA, Apple Metal, or CPU).
     """
-    if BACKEND == 'cuda':
-        # Dask/chunking is handled within the GPU-specific function
+    # Added a simple flag to the dispatcher to control GPU usage
+    if BACKEND == 'cuda' and modeling_settings.use_gpu:
         source_cube_dask = source_cube.chunk("auto")
-        return _resample_cuda(source_cube_dask, x_edges, y_edges, modeling_settings).cupy.as_numpy()
-    elif BACKEND == 'mlx':
+        gpu_result = _resample_cuda(source_cube_dask, x_edges, y_edges, modeling_settings)
+        return gpu_result.cupy.as_numpy()
+
+    elif BACKEND == 'mlx' and modeling_settings.use_gpu:
         return _resample_mlx(source_cube, x_edges, y_edges, modeling_settings)
-    else: # BACKEND == 'cpu'
+        
+    else: # Fallback to CPU
         return _resample_cpu(source_cube, x_edges, y_edges, modeling_settings)

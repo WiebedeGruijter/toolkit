@@ -31,9 +31,9 @@ class CubeSimulator(SimulatorBase):
     def __init__(self, filepath: str):
         super().__init__()
         # --- THIS IS THE FIX ---
-        # We now explicitly chunk the data cube when it's loaded.
-        # This converts the underlying data from a NumPy array to a Dask array.
-        self.input_spectrum = read_source_3D_cube(filepath=filepath).chunk("auto")
+        # We now load the data as a standard NumPy-backed xarray DataArray.
+        # No more Dask chunking.
+        self.input_spectrum = read_source_3D_cube(filepath=filepath)
         # ----------------------
 
     @lru_cache(maxsize=None)
