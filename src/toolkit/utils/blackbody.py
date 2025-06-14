@@ -2,7 +2,7 @@ import numpy as np
 from scipy.constants import h, c, k
 from pathlib import Path
 
-def planck_law(savepath:Path | None=None, wl_min_nm=380, wl_max_nm=640, nbins=500, temperature_k=5000, savefile=False):
+def planck_law(savepath:Path | None=None, wl_min_nm=380, wl_max_nm=640, nbins=50, temperature_k=5000, savefile=False):
     """
     Calculates the spectral radiance of a blackbody using Planck's Law.
 
