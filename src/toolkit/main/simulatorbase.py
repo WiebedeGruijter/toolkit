@@ -3,6 +3,7 @@ from toolkit.defines.modelingsettings import ModelingSettings
 import xarray as xr
 from toolkit.modeling.spatial_resampling import resample_source_to_instrument_grid
 from toolkit.read_data.source import read_source_3D_cube
+from functools import lru_cache
 
 class SimulatorBase(ABC):
     """An abstract base class for all instrument simulators."""
@@ -31,6 +32,7 @@ class CubeSimulator(SimulatorBase):
         super().__init__()
         self.input_spectrum = read_source_3D_cube(filepath=filepath)
 
+    @lru_cache(maxsize=None)
     def _get_clean_flux_on_detector_grid(self, modeling_settings: ModelingSettings) -> xr.DataArray:
         """The common core: projects the source onto the instrument's detector grid, without any noise."""
         x_edges, y_edges = modeling_settings.instrument.get_pixel_layout()
