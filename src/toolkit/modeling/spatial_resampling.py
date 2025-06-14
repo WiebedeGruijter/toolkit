@@ -85,7 +85,7 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
     print("...PSF convolution complete.")
 
 
-    # 5. Bin the convolved slices onto the detector grid. This part is fast.
+    # 5. Bin the convolved slices onto the detector grid.
     binned_flux_list = []
     for convolved_slice in convolved_slices:
         statistic, _, _, _ = binned_statistic_2d(
