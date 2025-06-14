@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 import numpy as np
+import xarray as xr
 
 # Import classes from your toolkit
 from toolkit.defines.instrument import JWSTMiri, JWSTNirSpecIFU
@@ -47,7 +48,18 @@ def nirspec_settings(nirspec_instrument: JWSTNirSpecIFU) -> ModelingSettings:
     """Fixture for NIRSpec modeling settings with a defined exposure time."""
     return ModelingSettings(instrument=nirspec_instrument, exposure_time=1000.0)
 
+# --- NEW FIXTURE FOR GPU TESTING ---
+@pytest.fixture
+def nirspec_settings_gpu(nirspec_instrument: JWSTNirSpecIFU) -> ModelingSettings:
+    """Fixture for NIRSpec modeling settings with GPU enabled."""
+    return ModelingSettings(instrument=nirspec_instrument, exposure_time=1000.0, use_gpu=True)
+
 @pytest.fixture
 def instrument_simulator(datacube_filepath: str) -> InstrumentSimulator:
     """Fixture to create an InstrumentSimulator with the test datacube."""
     return InstrumentSimulator(filepath=datacube_filepath)
+
+@pytest.fixture
+def source_cube(instrument_simulator: InstrumentSimulator) -> xr.DataArray:
+    """Fixture to provide the raw source cube DataArray."""
+    return instrument_simulator.input_spectrum

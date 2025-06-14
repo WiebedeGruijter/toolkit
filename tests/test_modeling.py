@@ -1,9 +1,18 @@
 import pytest
 import numpy as np
+
 from toolkit.modeling.noise_sources import (
     poisson_noise, readout_noise, linear_baseline_drift)
 from toolkit.modeling.model_spectrum import apply_instrumental_effects
 from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
+
+# Import for the new GPU test - now checks for both backends
+from toolkit.modeling.spatial_resampling import (
+    resample_source_to_instrument_grid, _is_cuda_available, _is_mlx_available)
+
+# --- Condition for skipping GPU tests ---
+ANY_GPU_UNAVAILABLE = not (_is_cuda_available() or _is_mlx_available())
+
 
 def test_resample_to_miri(instrument_simulator, miri_settings):
     """
@@ -41,6 +50,34 @@ def test_flux_conservation(instrument_simulator, miri_settings):
     
     # The values should be very close (allowing for float precision)
     np.testing.assert_allclose(total_input_flux.values, total_output_flux.values, rtol=1e-6)
+
+# --- NEW, MORE GENERAL GPU TEST ---
+@pytest.mark.skipif(ANY_GPU_UNAVAILABLE, reason="No compatible GPU (CUDA or MLX) available for this test")
+def test_any_gpu_resampling_matches_cpu(source_cube, nirspec_settings, nirspec_settings_gpu):
+    """
+    Tests that the result from any available GPU backend is numerically
+    consistent with the CPU result.
+    This test only runs if a compatible GPU is detected.
+    """
+    x_edges, y_edges = nirspec_settings.instrument.get_pixel_layout()
+
+    # 1. Get the result from the CPU implementation (use_gpu=False by default)
+    cpu_result = resample_source_to_instrument_grid(
+        source_cube, x_edges, y_edges, nirspec_settings
+    )
+
+    # 2. Get the result from whichever GPU the dispatcher finds (use_gpu=True)
+    gpu_result = resample_source_to_instrument_grid(
+        source_cube, x_edges, y_edges, nirspec_settings_gpu
+    )
+
+    # 3. Compare the results
+    assert gpu_result.shape == cpu_result.shape
+    assert gpu_result.dims == cpu_result.dims
+    
+    # Use a small relative tolerance to account for minor floating point differences
+    # between CPU and GPU arithmetic.
+    np.testing.assert_allclose(gpu_result.values, cpu_result.values, rtol=1e-6)
 
 def test_poisson_noise(miri_settings):
     """
