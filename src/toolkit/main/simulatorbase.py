@@ -36,5 +36,11 @@ class CubeSimulator(SimulatorBase):
     def _get_clean_flux_on_detector_grid(self, modeling_settings: ModelingSettings) -> xr.DataArray:
         """The common core: projects the source onto the instrument's detector grid, without any noise."""
         x_edges, y_edges = modeling_settings.instrument.get_pixel_layout()
+        
+        # This call is now cleaner and points to the refactored function
         return resample_source_to_instrument_grid(
-            source_cube=self.input_spectrum, x_edges=x_edges, y_edges=y_edges, modeling_settings=modeling_settings)
+            source_cube=self.input_spectrum, 
+            x_edges=x_edges, 
+            y_edges=y_edges, 
+            modeling_settings=modeling_settings
+        )
