@@ -9,7 +9,7 @@ def test_instrument_simulator_init(instrument_simulator):
     assert hasattr(instrument_simulator, 'input_spectrum')
     assert isinstance(instrument_simulator.input_spectrum, xr.DataArray)
 
-def test_get_flux_at_detector(instrument_simulator, nirspec_settings):
+def test_get_clean_flux_at_detector(instrument_simulator, nirspec_settings):
     """
     Tests the calculation of the clean, noise-free flux cube.
     """
