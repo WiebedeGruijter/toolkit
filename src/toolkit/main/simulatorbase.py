@@ -30,14 +30,17 @@ class CubeSimulator(SimulatorBase):
     """The common base class for all simulators that start with a 3D source cube."""
     def __init__(self, filepath: str):
         super().__init__()
-        self.input_spectrum = read_source_3D_cube(filepath=filepath)
+        # --- THIS IS THE FIX ---
+        # We now explicitly chunk the data cube when it's loaded.
+        # This converts the underlying data from a NumPy array to a Dask array.
+        self.input_spectrum = read_source_3D_cube(filepath=filepath).chunk("auto")
+        # ----------------------
 
     @lru_cache(maxsize=None)
     def _get_clean_flux_on_detector_grid(self, modeling_settings: ModelingSettings) -> xr.DataArray:
         """The common core: projects the source onto the instrument's detector grid, without any noise."""
         x_edges, y_edges = modeling_settings.instrument.get_pixel_layout()
         
-        # This call is now cleaner and points to the refactored function
         return resample_source_to_instrument_grid(
             source_cube=self.input_spectrum, 
             x_edges=x_edges, 

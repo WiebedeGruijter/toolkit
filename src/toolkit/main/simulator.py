@@ -28,23 +28,25 @@ class InstrumentSimulator(CubeSimulator):
         
         This is the primary output, simulating a full IFU data cube.
         """
-        # 1. Get the clean, noise-free data cube.
-        clean_cube = self.get_clean_flux_at_detector(modeling_settings)
-        
-        # 2. Apply noise effects to each pixel's spectrum. Note that apply_ufunc changes the shape of the array.
+        # 1. Get the clean cube from the GPU
+        clean_cube_cpu = self.get_clean_flux_at_detector(modeling_settings)
+
+        # 2. Explicitly move it back to the CPU
+        # clean_cube_cpu = clean_cube_gpu.cupy.as_numpy()
+
+        # 3. Now run the original apply_ufunc call on the CPU-based data
         noisy_cube_reordered = xr.apply_ufunc(
             apply_instrumental_effects,
-            clean_cube,                      # First input arg (for flux_values)
-            clean_cube.wavelength,           # Second input arg (for wavelength_values)
-            input_core_dims=[['wavelength'], ['wavelength']], # Rules for each input
-            output_core_dims=[['wavelength']],   # Rule for the output
-            vectorize=True,
-            keep_attrs=True, # It's good practice to keep attributes
-            kwargs={'modeling_settings': modeling_settings} # Extra args for the function
+            clean_cube_cpu, # Use the CPU version
+            clean_cube_cpu.wavelength,
+            input_core_dims=[['wavelength'], ['wavelength']],
+            output_core_dims=[['wavelength']],
+            vectorize=True, # This is fine now
+            keep_attrs=True,
+            kwargs={'modeling_settings': modeling_settings}
         )
 
-        # 3. Transpose the dimensions back to the original shape.
-        return noisy_cube_reordered.transpose(*clean_cube.dims)
+        return noisy_cube_reordered.transpose(*clean_cube_cpu.dims)
     
     def get_spatially_integrated_flux(self, modeling_settings: ModelingSettings) -> xr.DataArray:
         """
