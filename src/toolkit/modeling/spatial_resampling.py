@@ -2,7 +2,7 @@ import xarray as xr
 import numpy as np
 from scipy.stats import binned_statistic_2d
 from astropy.convolution import AiryDisk2DKernel, convolve
-from multiprocessing import Pool
+from joblib import Parallel, delayed
 from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
 from toolkit.defines.modelingsettings import ModelingSettings
 
@@ -49,7 +49,7 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
     """
     Resamples a source cube onto an instrument grid, applying a PSF convolution
     at each wavelength before binning. The PSF application is parallelized across
-    all available CPU cores using Python's multiprocessing module.
+    all available CPU cores using Python's joblib module.
     """
 
     # 1. Get coordinate axes from the source cube.
@@ -67,25 +67,22 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
     source_pixel_solid_angle = (dx_source * dy_source) * ARCSEC_2_TO_STERADIAN
     source_flux_map = source_cube * source_pixel_solid_angle
 
-    # 4. Prepare arguments for the parallel execution of _apply_psf.
+    # 4. Apply the PSF to all slices in parallel using joblib.
+    print("Applying PSF convolution to all wavelength slices...")
     mirror_diameter = modeling_settings.instrument.mirror_diameter
-    args_for_starmap = [
-        (
+    
+    convolved_slices = Parallel(n_jobs=-1)(
+        delayed(_apply_psf)(
             wl_slice.values,
             wl_slice.wavelength.item() * 1e-9,
             mirror_diameter,
             dx_source
         ) for wl_slice in source_flux_map
-    ]
-
-    # 5. Apply the PSF to all slices in parallel using a multiprocessing Pool.
-    print("Applying PSF convolution to all wavelength slices...")
-    with Pool() as pool:
-        convolved_slices = pool.starmap(_apply_psf, args_for_starmap)
+    )
     print("...PSF convolution complete.")
 
 
-    # 6. Bin the convolved slices onto the detector grid. This part is fast.
+    # 5. Bin the convolved slices onto the detector grid. This part is fast.
     binned_flux_list = []
     for convolved_slice in convolved_slices:
         statistic, _, _, _ = binned_statistic_2d(
@@ -97,7 +94,7 @@ def resample_source_to_instrument_grid(source_cube: xr.DataArray, x_edges: np.nd
         )
         binned_flux_list.append(statistic.T)
 
-    # 7. Create the final DataArray for the instrument cube.
+    # 6. Create the final DataArray for the instrument cube.
     flux_cube = xr.DataArray(
         data=np.array(binned_flux_list),
         dims=['wavelength', 'pix_y', 'pix_x'],
