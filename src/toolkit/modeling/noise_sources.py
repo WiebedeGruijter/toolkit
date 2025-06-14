@@ -63,7 +63,7 @@ def readout_noise( modeling_settings: ModelingSettings):
 
 def calculate_psf(flux: np.ndarray, modeling_settings: ModelingSettings):
     import warnings
-    warnings.warn('Instrumental broadening not implemented yet, defaulting to no broadening')
+    warnings.warn('PSF not implemented yet, defaulting to no broadening')
     return flux
 
 def linear_baseline_drift(modeling_settings: ModelingSettings):
