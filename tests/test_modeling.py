@@ -5,8 +5,6 @@ from toolkit.modeling.noise_sources import (
     poisson_noise, readout_noise, linear_baseline_drift)
 from toolkit.modeling.model_spectrum import apply_instrumental_effects
 from toolkit.utils.unit_conversions import ARCSEC_2_TO_STERADIAN
-
-# Import for the new GPU test - now checks for both backends
 from toolkit.modeling.spatial_resampling import (
     resample_source_to_instrument_grid, _is_cuda_available, _is_mlx_available)
 
@@ -51,7 +49,6 @@ def test_flux_conservation(instrument_simulator, miri_settings):
     # The values should be very close (allowing for float precision)
     np.testing.assert_allclose(total_input_flux.values, total_output_flux.values, rtol=1e-6)
 
-# --- NEW, MORE GENERAL GPU TEST ---
 @pytest.mark.skipif(ANY_GPU_UNAVAILABLE, reason="No compatible GPU (CUDA or MLX) available for this test")
 def test_any_gpu_resampling_matches_cpu(source_cube, nirspec_settings, nirspec_settings_gpu):
     """
@@ -75,9 +72,7 @@ def test_any_gpu_resampling_matches_cpu(source_cube, nirspec_settings, nirspec_s
     assert gpu_result.shape == cpu_result.shape
     assert gpu_result.dims == cpu_result.dims
     
-    # Use a small relative tolerance to account for minor floating point differences
-    # between CPU and GPU arithmetic.
-    np.testing.assert_allclose(gpu_result.values, cpu_result.values, rtol=1e-6)
+    np.testing.assert_allclose(gpu_result.values, cpu_result.values, atol=1e-12)
 
 def test_poisson_noise(miri_settings):
     """
