@@ -28,20 +28,15 @@ class InstrumentSimulator(CubeSimulator):
         
         This is the primary output, simulating a full IFU data cube.
         """
-        # 1. Get the clean cube from the GPU
         clean_cube_cpu = self.get_clean_flux_at_detector(modeling_settings)
 
-        # 2. Explicitly move it back to the CPU
-        # clean_cube_cpu = clean_cube_gpu.cupy.as_numpy()
-
-        # 3. Now run the original apply_ufunc call on the CPU-based data
         noisy_cube_reordered = xr.apply_ufunc(
             apply_instrumental_effects,
-            clean_cube_cpu, # Use the CPU version
+            clean_cube_cpu,
             clean_cube_cpu.wavelength,
             input_core_dims=[['wavelength'], ['wavelength']],
             output_core_dims=[['wavelength']],
-            vectorize=True, # This is fine now
+            vectorize=True,
             keep_attrs=True,
             kwargs={'modeling_settings': modeling_settings}
         )
