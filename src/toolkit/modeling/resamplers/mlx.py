@@ -23,7 +23,7 @@ class MLXResampler(ResamplerBase):
             psf_kernel_np = AiryDisk2DKernel(first_null_pix).array
             image_mlx = self.mx.array(image_slice[np.newaxis, ..., np.newaxis], dtype=self.mx.float32)
             kernel_mlx = self.mx.array(psf_kernel_np[..., np.newaxis, np.newaxis], dtype=self.mx.float32)
-            convolved_mlx = self.mnn.convolution.conv2d(image_mlx, kernel_mlx, stride=1, padding=psf_kernel_np.shape[0] // 2)
+            convolved_mlx = self.mnn.convolution.Conv2d(image_mlx, kernel_mlx, stride=1, padding=psf_kernel_np.shape[0] // 2)
             return np.array(convolved_mlx[0, :, :, 0])
         return image_slice
 
