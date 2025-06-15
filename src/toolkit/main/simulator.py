@@ -56,3 +56,17 @@ class InstrumentSimulator(CubeSimulator):
         """
         noisy_cube = self.get_observed_spectrum(modeling_settings)
         return noisy_cube.sum(dim=['pix_x', 'pix_y'])
+    
+    def get_wavelength_integrated_flux(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """
+        Gets the clean (noise-free) flux, wavelength integrated into a 2D spectrum.
+        """
+        clean_cube = self.get_clean_flux_at_detector(modeling_settings)
+        return clean_cube.sum(dim=['wavelength'])
+
+    def get_wavelength_integrated_observed_spectrum(self, modeling_settings: ModelingSettings) -> xr.DataArray:
+        """
+        Gets the observed flux with noise, wavelength integrated into a 2D spectrum.
+        """
+        noisy_cube = self.get_observed_spectrum(modeling_settings)
+        return noisy_cube.sum(dim=['wavelength'])
