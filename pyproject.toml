@@ -6,9 +6,30 @@ authors = [
     { name="Wiebe", email="wiebedg@gmail.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.7"
-dependencies = []
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+
+# Core dependencies required for the project to run
+dependencies = [
+    "numpy",
+    "scipy",
+    "xarray",
+    "astropy",
+    "netcdf4"
+]
 
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+# Dependencies for NVIDIA GPU acceleration
+cuda = ["cupy-cuda12x", "cupy-xarray"]
+
+# Dependencies for Apple Silicon GPU acceleration
+mlx = ["mlx"]

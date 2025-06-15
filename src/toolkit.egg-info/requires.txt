@@ -1,0 +1,12 @@
+numpy
+scipy
+xarray
+astropy
+netcdf4
+
+[cuda]
+cupy-cuda12x
+cupy-xarray
+
+[mlx]
+mlx
