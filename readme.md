@@ -4,7 +4,7 @@ To install on windows:
 pip install --editable .[cuda]
 
 To install on mac:
-pip install --editable .[mlx]
+pip install --editable ".[mlx]"
 
 
 If you want to build the package, run the following:

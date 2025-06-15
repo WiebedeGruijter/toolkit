@@ -1,7 +1,7 @@
 [project]
 name = "toolkit"
 version = "0.1.0"
-description = "Simulate observations with an interferometer"
+description = "Simulate optical instrumentation"
 authors = [
     { name="Wiebe", email="wiebedg@gmail.com" }
 ]
