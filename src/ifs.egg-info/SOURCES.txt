@@ -1,6 +1,0 @@
-README.md
-pyproject.toml
-src/ifs.egg-info/PKG-INFO
-src/ifs.egg-info/SOURCES.txt
-src/ifs.egg-info/dependency_links.txt
-src/ifs.egg-info/top_level.txt
