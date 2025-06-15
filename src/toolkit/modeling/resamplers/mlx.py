@@ -35,7 +35,7 @@ class MLXResampler(ResamplerBase):
         k_h, k_w = psf_kernel_np.shape
         kernel_mlx = self.mx.array(psf_kernel_np.reshape(1, k_h, k_w, 1), dtype=self.mx.float32)
 
-        # 2. Perform convolution using the correct functional API: mx.conv2d
+        # 2. Perform convolution
         padding = k_h // 2
         
         convolved_mlx = self.mx.conv2d(
@@ -45,7 +45,7 @@ class MLXResampler(ResamplerBase):
             padding=padding
         )
 
-        # Normalize the result to conserve flux, consistent with other resamplers
+        # Normalize the result to conserve flux
         convolved_mlx = convolved_mlx / self.mx.sum(kernel_mlx)
 
         # 3. Convert back to a NumPy array, removing the batch and channel dimensions

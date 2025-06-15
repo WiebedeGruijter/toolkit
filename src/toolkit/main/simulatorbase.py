@@ -30,11 +30,7 @@ class CubeSimulator(SimulatorBase):
     """The common base class for all simulators that start with a 3D source cube."""
     def __init__(self, filepath: str):
         super().__init__()
-        # --- THIS IS THE FIX ---
-        # We now load the data as a standard NumPy-backed xarray DataArray.
-        # No more Dask chunking.
         self.input_spectrum = read_source_3D_cube(filepath=filepath)
-        # ----------------------
 
     @lru_cache(maxsize=None)
     def _get_clean_flux_on_detector_grid(self, modeling_settings: ModelingSettings) -> xr.DataArray:
